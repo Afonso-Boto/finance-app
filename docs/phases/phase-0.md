@@ -49,6 +49,7 @@ All of these must pass before Phase 1 starts:
 - **OIDC trust:** the issuer is `token.actions.githubusercontent.com`. Scope each role on the `sub` claim to this repository: `repo:Afonso-Boto/finance-app:ref:refs/heads/main` for dev, and `repo:Afonso-Boto/finance-app:environment:prod` for prod, so only the approved `prod` environment can assume the prod role. The CI role needs only `sts:AssumeRole` on the CDK bootstrap roles.
 - **Chicken-and-egg:** the OIDC provider and CI roles must exist before the pipeline can deploy. Create them once from a laptop with an admin profile as a small `bootstrap` stack, and document the exception in ADR-0004.
 - **Cognito callback URL:** the app client needs the CloudFront domain, which exists only after the distribution. This affects where the stateful/stateless split sits.
+- **Budgets in eu-north-1:** CloudFormation has no `AWS::Budgets::Budget` type there, so `BudgetsStack` uses an `AwsCustomResource` that calls the global Budgets API (us-east-1). The Region-deny SCP must exempt `budgets:*`. Any config change renames the budget (config hash), because UpdateBudget cannot change notifications.
 - **Costs:** no NAT Gateway or VPC, log retention set everywhere, X-Ray sampling kept low. Enforce with a CDK aspect or lint rule, not memory.
 
 ## Open questions
