@@ -51,6 +51,8 @@ All of these must pass before Phase 1 starts:
 - **Chicken-and-egg:** the OIDC provider and CI roles must exist before the pipeline can deploy. Create them once from a laptop with an admin profile as a small `bootstrap` stack, and document the exception in ADR-0004.
 - **Cognito callback URL:** the app client needs the CloudFront domain, which exists only after the distribution. This affects where the stateful/stateless split sits.
 - **Budgets in eu-north-1:** CloudFormation has no `AWS::Budgets::Budget` type there, so `BudgetsStack` uses an `AwsCustomResource` that calls the global Budgets API (us-east-1). The Region-deny SCP must exempt `budgets:*`. Any config change renames the budget (config hash), because UpdateBudget cannot change notifications.
+- **Hello world design:** the frontend reads `/config.json`, written by the Stateless stack at deploy time, so one build serves every environment. The API is called cross-origin with CORS (allowed origins: the CloudFront URL, plus `localhost:5173` in dev only), rather than through CloudFront, to keep the Authorization header path simple. Cognito access tokens carry `client_id` instead of `aud`; API Gateway's JWT authorizer checks that against the app client.
+- **SCP:** CloudFront is a global service (us-east-1), so the Region-deny SCP must exempt `cloudfront:*`, as it does `iam:*` and `budgets:*`.
 - **Costs:** no NAT Gateway or VPC, log retention set everywhere, X-Ray sampling kept low. Enforce with a CDK aspect or lint rule, not memory.
 
 ## Open questions

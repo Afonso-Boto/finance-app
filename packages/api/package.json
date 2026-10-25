@@ -7,9 +7,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@finance/domain": "workspace:*"
+    "@aws-lambda-powertools/logger": "^2.36.0",
+    "@aws-lambda-powertools/tracer": "^2.36.0",
+    "@finance/domain": "workspace:*",
+    "@middy/core": "^7.9.2"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
     "@types/node": "^24"
   }
 }

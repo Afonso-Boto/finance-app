@@ -19,6 +19,9 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
+      # The Stateless stack uploads the built frontend, so synth needs it.
+      - run: pnpm build
+
       # Synth only: the placeholder email never reaches AWS.
       - run: pnpm --filter @finance/infra synth
         env:

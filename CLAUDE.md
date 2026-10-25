@@ -88,6 +88,7 @@ Flag any change that could add a recurring cost before making it.
 Run from the repo root (full tables in `README.md`):
 
 - `pnpm install`: install all workspace packages
+- `pnpm build`: build the frontend; `cdk synth`, `diff` and `deploy` need `packages/web/dist`
 - `pnpm check`: lint, typecheck and test everything; run this before every commit
 - `pnpm lint:fix`: apply Biome lint and format fixes
 - `pnpm --filter <package> <script>`: run one package's script, e.g. `pnpm --filter @finance/domain test`
@@ -100,6 +101,8 @@ Tooling notes:
 - The `domain` boundary is enforced twice: Biome `noRestrictedImports`, and the domain tsconfig has no Node or DOM types.
 - Packages consume `@finance/domain` from TypeScript source (`exports` points at `src/index.ts`). There is no build step between packages.
 - Dependency install scripts are blocked by default. Allow one only by adding it to `allowBuilds` in `pnpm-workspace.yaml`.
+- `infra` turns off `exactOptionalPropertyTypes`: aws-cdk-lib's types don't support it. Every other package keeps it.
+- Stacks are wired in `infra/lib/app.ts` (`buildApp`), so tests can build the whole app; `infra/lib/guardrails.test.ts` checks log retention and no-VPC across every stack.
 - Account IDs live in `infra/lib/config.ts`; the workflows repeat them and `infra/lib/workflows.test.ts` checks they match.
 
 ## Out of scope for the pilot

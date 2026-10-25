@@ -1,7 +1,10 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // aws-cdk-lib's types are not written for this flag (e.g. Bucket stops being an IBucket).
+    // Kept on in every other package.
+    "exactOptionalPropertyTypes": false
   },
   "include": ["bin", "lib"]
 }

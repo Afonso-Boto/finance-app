@@ -1,0 +1,7 @@
+{
+  "region": "eu-north-1",
+  "userPoolId": "eu-north-1_XXXXXXXXX",
+  "clientId": "xxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "cognitoDomain": "https://finance-app-dev-117442930591.auth.eu-north-1.amazoncognito.com",
+  "apiUrl": "https://xxxxxxxxxx.execute-api.eu-north-1.amazonaws.com"
+}

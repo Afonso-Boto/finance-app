@@ -33,7 +33,7 @@ Constraints:
 
 ## Decision
 
-We will use REST with an OpenAPI contract (Option A), on API Gateway HTTP API with the Cognito JWT authorizer. Option B's main advantage is subscriptions, which are a Phase 8 stretch goal and can be added separately.
+We will use Option A REST with an OpenAPI contract (Option A), on API Gateway HTTP API with the Cognito JWT authorizer. Option B's main advantage is subscriptions, which are a Phase 8 stretch goal and can be added separately.
 
 Shape (confirm):
 
@@ -47,9 +47,6 @@ Shape (confirm):
 **OPEN: source of truth for schemas.** Pick one and record why.
 
 - *OpenAPI first:* the spec file is hand-reviewed and the types and validators are generated from it. Best fit for "the owner writes the thinking", and the contract is a reviewable artifact.
-- *Zod first:* schemas live in TypeScript (possibly in `domain`), and the OpenAPI document is generated from them. One definition for runtime validation and types, but the contract is a build output rather than something you write.
-
-My lean is OpenAPI first, with runtime validation in the Lambda generated from the same spec.
 
 ## Consequences
 
