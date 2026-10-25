@@ -7,7 +7,7 @@ function synth(trustedSubject = 'ref:refs/heads/main'): Template {
   const stack = new BootstrapStack(new App(), 'Bootstrap-test', {
     env: { account: '111111111111', region: 'eu-north-1' },
     envName: 'test',
-    github: { owner: 'owner', repo: 'repo' },
+    github: { owner: 'owner', ownerId: '123', repo: 'repo', repoId: '456' },
     trustedSubject,
   });
   return Template.fromStack(stack);
@@ -58,8 +58,8 @@ describe('BootstrapStack', () => {
   });
 
   it.each([
-    ['ref:refs/heads/main', 'repo:owner/repo:ref:refs/heads/main'],
-    ['environment:prod', 'repo:owner/repo:environment:prod'],
+    ['ref:refs/heads/main', 'repo:owner@123/repo@456:ref:refs/heads/main'],
+    ['environment:prod', 'repo:owner@123/repo@456:environment:prod'],
   ])('deploy role trusts exactly one subject (%s)', (trustedSubject, expectedSub) => {
     synth(trustedSubject).hasResourceProperties('AWS::IAM::Role', {
       RoleName: DEPLOY_ROLE_NAME,
@@ -78,7 +78,7 @@ describe('BootstrapStack', () => {
     synth().hasResourceProperties('AWS::IAM::Role', {
       RoleName: DIFF_ROLE_NAME,
       MaxSessionDuration: 3600,
-      AssumeRolePolicyDocument: trustFor('repo:owner/repo:pull_request'),
+      AssumeRolePolicyDocument: trustFor('repo:owner@123/repo@456:pull_request'),
     });
   });
 

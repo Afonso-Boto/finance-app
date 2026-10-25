@@ -47,7 +47,7 @@ All of these must pass before Phase 1 starts:
 
 ## Gotchas
 
-- **OIDC trust:** the issuer is `token.actions.githubusercontent.com`. Scope each role on the `sub` claim to this repository: `repo:Afonso-Boto/finance-app:ref:refs/heads/main` for dev, and `repo:Afonso-Boto/finance-app:environment:prod` for prod, so only the approved `prod` environment can assume the prod role. The CI role needs only `sts:AssumeRole` on the CDK bootstrap roles.
+- **OIDC trust:** the issuer is `token.actions.githubusercontent.com`. The repo uses GitHub's immutable subject claims, so `sub` includes numeric IDs: `repo:Afonso-Boto@57546747/finance-app@1433468503:<context>`. The dev deploy role trusts `ref:refs/heads/main`, the prod deploy role only `environment:prod`, and the diff roles `pull_request`. A recreated repo gets a new ID and cannot inherit the trust. Check the format with `gh api repos/Afonso-Boto/finance-app/actions/oidc/customization/sub`.
 - **Chicken-and-egg:** the OIDC provider and CI roles must exist before the pipeline can deploy. Create them once from a laptop with an admin profile as a small `bootstrap` stack, and document the exception in ADR-0004.
 - **Cognito callback URL:** the app client needs the CloudFront domain, which exists only after the distribution. This affects where the stateful/stateless split sits.
 - **Budgets in eu-north-1:** CloudFormation has no `AWS::Budgets::Budget` type there, so `BudgetsStack` uses an `AwsCustomResource` that calls the global Budgets API (us-east-1). The Region-deny SCP must exempt `budgets:*`. Any config change renames the budget (config hash), because UpdateBudget cannot change notifications.

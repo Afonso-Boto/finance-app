@@ -22,7 +22,18 @@ const PULL_REQUEST_SUBJECT = 'pull_request';
 
 export interface BootstrapStackProps extends StackProps {
   readonly envName: string;
-  readonly github: { readonly owner: string; readonly repo: string };
+  /**
+   * The repository allowed to assume the roles. The numeric IDs are part of the `sub` claim
+   * because the repository uses GitHub's immutable subject claims: a deleted and recreated
+   * repository with the same name gets a new ID, so it can't inherit this trust.
+   * See `gh api repos/<owner>/<repo>/actions/oidc/customization/sub`.
+   */
+  readonly github: {
+    readonly owner: string;
+    readonly ownerId: string;
+    readonly repo: string;
+    readonly repoId: string;
+  };
   /** The part of GitHub's OIDC `sub` claim after `repo:<owner>/<repo>:`, e.g. `environment:prod`. */
   readonly trustedSubject: string;
 }
@@ -52,7 +63,8 @@ export class BootstrapStack extends Stack {
       clientIds: ['sts.amazonaws.com'],
     });
 
-    const repo = `repo:${props.github.owner}/${props.github.repo}`;
+    const { owner, ownerId, repo: name, repoId } = props.github;
+    const repo = `repo:${owner}@${ownerId}/${name}@${repoId}`;
 
     this.deployRole = this.githubRole('GitHubDeployRole', {
       provider,
