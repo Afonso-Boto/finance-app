@@ -2,8 +2,6 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -14,26 +12,38 @@ concurrency:
 
 jobs:
   check:
+    uses: ./.github/workflows/check.yml
+
+  # Shows what the pull request would change in each account. Read-only: the diff role can
+  # only assume the CDK lookup role (Bootstrap stack). Account IDs match infra/lib/config.ts.
+  diff:
+    needs: check
+    # Pull requests from forks get no OIDC token or secrets, so skip them.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env: dev
+            account: "117442930591"
+          - env: prod
+            account: "756429941457"
+    name: diff (${{ matrix.env }})
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
 
-      # Installs the pnpm version pinned in package.json ("packageManager").
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v5
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
+          role-to-assume: arn:aws:iam::${{ matrix.account }}:role/finance-app-github-diff
+          role-session-name: pr-${{ github.event.pull_request.number }}-diff-${{ matrix.env }}
+          aws-region: eu-north-1
 
-      - run: pnpm install --frozen-lockfile
-
-      # Lint, format check and the domain boundary rule (biome.json).
-      - run: pnpm exec biome ci .
-
-      - run: pnpm typecheck
-      - run: pnpm test
-      # Synth only: the placeholder email never reaches AWS. Deploy workflows use the real address.
-      - run: pnpm --filter @finance/infra synth
+      # --method template compares templates through the lookup role (no change set needed).
+      - run: pnpm --filter @finance/infra exec cdk diff "*-${{ matrix.env }}" --method template
         env:
-          BUDGET_ALERT_EMAIL: ci@example.invalid
+          BUDGET_ALERT_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL }}

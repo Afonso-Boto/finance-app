@@ -40,9 +40,10 @@ All of these must pass before Phase 1 starts:
 
 ## Pipeline shape
 
-- Every pull request: lint, test, boundary check, `cdk synth`, and `cdk diff` posted to the PR.
-- Merge to main: deploy dev automatically.
-- Prod: deploy the same commit through a GitHub Environment (`prod`) that requires your approval.
+- Every pull request (`ci.yml`): checks, then `cdk diff --method template` against dev and prod through the read-only diff role.
+- Push to main (`deploy.yml`): checks, deploy dev, then deploy prod in the same run after approval in the `prod` GitHub Environment, so prod gets exactly the commit dev got.
+- Both workflows call the same reusable `check.yml`.
+- Bootstrap stacks are excluded from the pipeline: they only exist in the app with `-c bootstrap=true`.
 
 ## Gotchas
 

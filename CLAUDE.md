@@ -85,7 +85,22 @@ Flag any change that could add a recurring cost before making it.
 
 ## Commands
 
-Fill in as the scaffold lands (install, test, lint, synth, deploy).
+Run from the repo root (full tables in `README.md`):
+
+- `pnpm install`: install all workspace packages
+- `pnpm check`: lint, typecheck and test everything; run this before every commit
+- `pnpm lint:fix`: apply Biome lint and format fixes
+- `pnpm --filter <package> <script>`: run one package's script, e.g. `pnpm --filter @finance/domain test`
+- `pnpm --filter @finance/infra synth`: `cdk synth` (needs `BUDGET_ALERT_EMAIL` set)
+- Bootstrap stacks deploy from a laptop only, with `-c bootstrap=true` (see `README.md`). The pipeline must never deploy them.
+
+Tooling notes:
+
+- Lint and format use Biome (`biome.json`), not ESLint: typescript-eslint does not support TypeScript 7 yet.
+- The `domain` boundary is enforced twice: Biome `noRestrictedImports`, and the domain tsconfig has no Node or DOM types.
+- Packages consume `@finance/domain` from TypeScript source (`exports` points at `src/index.ts`). There is no build step between packages.
+- Dependency install scripts are blocked by default. Allow one only by adding it to `allowBuilds` in `pnpm-workspace.yaml`.
+- Account IDs live in `infra/lib/config.ts`; the workflows repeat them and `infra/lib/workflows.test.ts` checks they match.
 
 ## Out of scope for the pilot
 
