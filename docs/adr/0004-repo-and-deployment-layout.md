@@ -5,18 +5,17 @@
 - **Phase:** 0
 - **Related:** ADR-0001, ADR-0002, ADR-0003, `docs/phases/phase-0.md`
 
-> DRAFT from discussion. Rewrite the reasoning in your own words, check the points marked "confirm", then set the status to accepted. Parts of this will be proven by the Phase 0 scaffold, so finish it as you build.
 
 ## Context
 
-One developer, a TypeScript codebase, serverless AWS (eu-central-1), two AWS accounts (dev and prod), GitLab.com for source and CI. The goal is learning architecture and delivery, with cost kept to $5-10/month.
+One developer, a TypeScript codebase, serverless AWS in eu-north-1, two workload AWS accounts (dev and prod) under an AWS Organization, GitHub for source and CI. The goal is learning architecture and delivery, with cost kept to $5-10/month.
 
 The system already has independently deployed units: the API, projection workers, shared market-data and news ingestion, and rules/feed workers. They communicate through events and reference data.
 
 ## Options
 
 ### Option A: Modular monolith in one monorepo
-- Pros: a feature usually touches a Lambda, its infrastructure and the API contract together, so one MR and one pipeline; docs, ADRs and `CLAUDE.md` sit next to the code; least overhead for one developer.
+- Pros: a feature usually touches a Lambda, its infrastructure and the API contract together, so one pull request and one pipeline; docs, ADRs and `CLAUDE.md` sit next to the code; least overhead for one developer.
 - Cons: boundaries must be enforced by tooling, not by the repo split; the pipeline needs path rules if it gets slow.
 
 ### Option B: Separate repositories (application and CDK)
@@ -37,12 +36,12 @@ We will use a pnpm-workspace monorepo with a modular monolith (Option A). Indepe
 - `packages/api`: Lambda handlers.
 - `packages/web`: the browser app (see "Frontend" below).
 - `infra/`: CDK app.
-- Boundaries (`domain` imports no AWS or browser code; contexts do not reach into each other) are enforced in CI. **OPEN:** dependency-cruiser or eslint boundaries.
+- Boundaries (`domain` imports no AWS or browser code; contexts do not reach into each other) are enforced in CI with Biome (`noRestrictedImports` scoped to `packages/domain`), backed by the domain tsconfig having no Node or DOM types. Biome also does linting and formatting. ESLint was not chosen because typescript-eslint does not support TypeScript 7; dependency-cruiser stays an option if context-to-context rules outgrow Biome.
 - The shared market-data and news pipeline is the one place with a real service boundary (shared data, different cadence, independent failure). It gets its own package and stack, and talks to the rest only through reference data (confirm when Phase 3 starts).
 
 ### Stacks, split by lifecycle (confirm)
 
-- **bootstrap:** Github OIDC provider and CI roles. Created once from a laptop with an admin profile, then never touched by the pipeline. This is a documented exception to "no console/manual changes".
+- **bootstrap:** GitHub OIDC provider and CI roles. Created once from a laptop with an admin profile, then never touched by the pipeline. This is a documented exception to "no console/manual changes".
 - **budgets:** Budgets alarms, one small stack per account, deployed first.
 - **stateful:** DynamoDB tables, Cognito user pool, data buckets. Termination protection on, removal policy retain.
 - **stateless:** Lambdas, HTTP API, SPA bucket, CloudFront, Cognito app client. Safe to replace.
@@ -50,10 +49,12 @@ We will use a pnpm-workspace monorepo with a modular monolith (Option A). Indepe
 
 ### Environments and delivery
 
-- Two accounts: dev and prod. No staging account in the pilot.
-- Github CI authenticates to AWS with OIDC. Roles are scoped by project path and ref; only protected branches may assume the prod role. The CI role may only assume the CDK bootstrap roles.
-- Every MR: lint, tests, boundary check, `cdk synth`, and `cdk diff` posted to the MR.
-- Merge to main deploys dev automatically. Prod deploys the same commit behind a manual job.
+- Three accounts in one AWS Organization: a management account (billing, Organizations, IAM Identity Center; no workloads), and dev and prod in a `Workloads` OU. No staging account in the pilot.
+- Workload Region is eu-north-1 (Stockholm): lower cost, and an SCP on `Workloads` denies other Regions apart from the global services. IAM Identity Center runs in us-east-1. Bedrock model availability in eu-north-1 must be checked before Phase 4; cross-Region inference would need an SCP exception.
+- Human access is through IAM Identity Center only. Member-account root credentials are removed with centralized root access.
+- GitHub Actions authenticates to AWS with OIDC (`token.actions.githubusercontent.com`). Each role trusts only this repository's `sub` claim: `main` for dev, and the `prod` GitHub Environment for prod. The CI roles may only assume the CDK bootstrap roles.
+- Every pull request: lint, tests, boundary check, `cdk synth`, and `cdk diff` posted to the PR.
+- Merge to main deploys dev automatically. Prod deploys the same commit through the `prod` GitHub Environment, which requires the owner's approval.
 - Lambdas are bundled with esbuild through `NodejsFunction`. Trunk-based development with short-lived branches.
 
 ### Frontend
@@ -64,7 +65,7 @@ Why: the owner wants to spend learning effort elsewhere and most frontend code w
 
 ## Consequences
 
-- **Good:** one MR per feature, docs next to code, cheap and simple pipeline, clear stateful/stateless blast-radius control.
+- **Good:** one pull request per feature, docs next to code, cheap and simple pipeline, clear stateful/stateless blast-radius control.
 - **Bad:** boundaries are only as strong as the CI check; the bootstrap stack is a manual exception; no staging environment means prod is the first realistic test of some changes.
 - **Follow-ups:**
   - Pick the boundary tool.
@@ -75,7 +76,7 @@ Why: the owner wants to spend learning effort elsewhere and most frontend code w
 
 Extract a context into its own service only if it has a different scaling profile, release cadence or ownership (for example, the news pipeline growing its own team or load). Also revisit if:
 
-- CI time becomes a problem (use Github `rules: changes` first, split the repo last).
+- CI time becomes a problem (use path filters on the GitHub Actions workflows first, split the repo last).
 - Prod regressions suggest a staging environment is worth its cost.
 - A second developer joins and ownership boundaries appear.
 
