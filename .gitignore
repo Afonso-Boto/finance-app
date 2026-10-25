@@ -1,28 +1,36 @@
-# Angular specific
-/dist/
-/out-tsc/
-/tmp/
-/coverage/
-/e2e/test-output/
-/.angular/
-.angular/
+# Dependencies (no leading slash: matches node_modules in every workspace package)
+node_modules/
+.pnpm-store/
 
-# Node modules and dependency files
-/node_modules/
-/package-lock.json
-/yarn.lock
+# This repo uses pnpm only; never commit other lockfiles
+package-lock.json
+yarn.lock
 
-# Environment files
-/.env
-
-# Angular CLI and build artefacts
-/.angular-cli.json
-/.ng/
-
-# TypeScript cache
+# Build and test output
+dist/
+build/
+coverage/
 *.tsbuildinfo
 
+# AWS CDK synth output (keep cdk.context.json committed: it makes synth deterministic)
+cdk.out/
+
+# Environment and secrets (commit a .env.example if one is needed)
+.env
+.env.*
+!.env.example
+*.local
+
 # Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+pnpm-debug.log*
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Temporary files
+tmp/
