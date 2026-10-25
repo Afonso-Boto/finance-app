@@ -24,6 +24,7 @@ Run from the repo root:
 | Command | What it does |
 | --- | --- |
 | `pnpm install` | Install all workspace packages |
+| `pnpm build` | Build the frontend (`packages/web/dist`); needed before `cdk synth`, `diff` or `deploy` |
 | `pnpm check` | Lint, typecheck and test everything (what CI runs) |
 | `pnpm lint` / `pnpm lint:fix` | Biome lint and format check / apply fixes |
 | `pnpm typecheck` | `tsc` in every package |
@@ -57,3 +58,28 @@ GitHub setup (once):
 
 - Repository secret `BUDGET_ALERT_EMAIL`.
 - Environment `prod`: required reviewer (you), deployment branches limited to `main`.
+
+## Signing in
+
+Sign-up is invite-only. Create a user per environment (the user pool ID is a `Stateless-<env>`
+stack output, `UserPoolId`):
+
+```
+aws cognito-idp admin-create-user --profile finance-dev \
+  --user-pool-id <UserPoolId> --username you@example.com \
+  --user-attributes Name=email,Value=you@example.com Name=email_verified,Value=true
+```
+
+Cognito emails a temporary password; you choose a new one at first sign-in. The app is at the
+`SiteUrl` output.
+
+## Running the frontend locally
+
+The local dev server signs in against the deployed dev environment (only dev allows
+`http://localhost:5173`):
+
+1. Get the dev outputs:
+   `aws cloudformation describe-stacks --stack-name Stateless-dev --query "Stacks[0].Outputs" --profile finance-dev`
+2. Copy `packages/web/config.example.json` to `packages/web/public/config.json` (gitignored) and fill
+   in the values.
+3. `pnpm --filter @finance/web dev` and open http://localhost:5173.

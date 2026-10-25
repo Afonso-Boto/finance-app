@@ -43,6 +43,8 @@ jobs:
           role-session-name: pr-${{ github.event.pull_request.number }}-diff-${{ matrix.env }}
           aws-region: eu-north-1
 
+      - run: pnpm build
+
       # --method template compares templates through the lookup role (no change set needed).
       - run: pnpm --filter @finance/infra exec cdk diff "*-${{ matrix.env }}" --method template
         env:

@@ -35,6 +35,8 @@ jobs:
           role-session-name: deploy-dev-${{ github.run_id }}
           aws-region: eu-north-1
 
+      - run: pnpm build
+
       # Bootstrap stacks are not in the app without -c bootstrap=true, so this can't touch them.
       - run: pnpm --filter @finance/infra exec cdk deploy "*-dev" --require-approval never
         env:
@@ -57,6 +59,8 @@ jobs:
           role-to-assume: arn:aws:iam::756429941457:role/finance-app-github-deploy
           role-session-name: deploy-prod-${{ github.run_id }}
           aws-region: eu-north-1
+
+      - run: pnpm build
 
       - run: pnpm --filter @finance/infra exec cdk deploy "*-prod" --require-approval never
         env:

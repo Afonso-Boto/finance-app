@@ -34,3 +34,6 @@ pnpm-debug.log*
 
 # Temporary files
 tmp/
+
+# Local frontend config pointing at a deployed environment (see README)
+packages/web/public/config.json
