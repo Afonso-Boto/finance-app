@@ -12,7 +12,17 @@ export interface EnvironmentConfig {
     /** Monthly cost limit for this account, in USD, before credits. */
     readonly monthlyLimitUsd: number;
   };
+  readonly ci: {
+    /**
+     * The part of GitHub's OIDC `sub` claim after `repo:<owner>/<repo>:` that may
+     * assume this account's deploy role. See docs/phases/phase-0.md (OIDC trust).
+     */
+    readonly trustedSubject: string;
+  };
 }
+
+/** The GitHub repository whose workflows may deploy (ADR-0004). */
+export const github = { owner: 'Afonso-Boto', repo: 'finance-app' } as const;
 
 /** Workload Region for every environment (ADR-0004). */
 const REGION = 'eu-north-1';
@@ -23,12 +33,14 @@ export const environments: Record<EnvName, EnvironmentConfig> = {
     account: '117442930591',
     region: REGION,
     budget: { monthlyLimitUsd: 5 },
+    ci: { trustedSubject: 'ref:refs/heads/main' },
   },
   prod: {
     name: 'prod',
     account: '756429941457',
     region: REGION,
     budget: { monthlyLimitUsd: 5 },
+    ci: { trustedSubject: 'environment:prod' },
   },
 };
 
