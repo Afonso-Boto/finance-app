@@ -15,7 +15,7 @@ Update this section when a phase closes. A phase closes only when its exit check
 The owner writes the thinking, Claude Code writes most of the typing.
 
 - The owner writes ADRs, domain models, access-pattern tables, invariants, key tests and exit checks **before** prompting for implementation.
-- Claude Code implements against those documents, in small merge requests.
+- Claude Code implements against those documents, in small pull requests.
 - If an ADR is missing for a decision you are about to make, **stop and say so**. Do not decide silently.
 - Prefer explaining a trade-off over hiding it. Code the owner cannot explain will be rejected.
 
@@ -29,7 +29,7 @@ The owner writes the thinking, Claude Code writes most of the typing.
 
 ## Architecture summary
 
-Fully serverless, no VPC, eu-central-1. The server is the source of truth. Ledger events are the core record; everything else is a projection built from them and can be rebuilt.
+Fully serverless, no VPC, eu-north-1 (an SCP denies other Regions; IAM Identity Center lives in us-east-1). The server is the source of truth. Ledger events are the core record; everything else is a projection built from them and can be rebuilt.
 
 - **Frontend:** single-page app on S3 + CloudFront (default domain).
 - **Auth:** Cognito user pool. The access token carries user identity only, never workspace permissions.
@@ -79,7 +79,7 @@ Flag any change that could add a recurring cost before making it.
 - TypeScript strict mode everywhere.
 - Tests with vitest. Property-based tests for ledger invariants. Golden files for CSV import.
 - Infrastructure is defined only in CDK. No console changes.
-- Small, focused merge requests, one concern each, linked to a phase issue.
+- Small, focused pull requests, one concern each, linked to a phase issue.
 - Structured logging with correlation IDs (Lambda Powertools).
 - Commit messages in conventional style (`feat:`, `fix:`, `docs:`, `chore:`).
 

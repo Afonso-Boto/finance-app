@@ -11,8 +11,8 @@ A signed-in "hello world" deployed to prod entirely through the pipeline, with A
 All of these must pass before Phase 1 starts:
 
 - [ ] A user signs in through Cognito on the prod CloudFront URL and the page shows the result of `GET /me`.
-- [ ] That deployment came from the GitLab pipeline, with no console changes.
-- [ ] A merge request that makes `domain` import AWS or browser code fails CI.
+- [ ] That deployment came from the GitHub Actions pipeline, with no console changes.
+- [ ] A pull request that makes `domain` import AWS or browser code fails CI.
 - [ ] A Budgets alarm test notification arrives, in both accounts.
 - [ ] Every log group has a retention period set in CDK.
 - [ ] ADR-0001 to ADR-0004 are `accepted`, and the index is up to date.
@@ -21,13 +21,13 @@ All of these must pass before Phase 1 starts:
 ## Week 1: foundations
 
 - [ ] Docs scaffold: ADR template, ADR index, `docs/phases/`, `CLAUDE.md`
-- [ ] AWS: dev and prod accounts, IAM Identity Center for human access, `cdk bootstrap` in both (eu-central-1)
+- [ ] AWS: dev and prod accounts, IAM Identity Center for human access, `cdk bootstrap` in both (eu-north-1). Identity Center lives in us-east-1.
 - [ ] Confirm the free-plan credits apply to both accounts, and note their expiry
 - [ ] Budgets alarms stack in each account, before anything else that can cost money
 - [ ] Monorepo scaffold: pnpm workspaces (`domain`, `api`, `web`, `infra`), strict shared `tsconfig`, vitest
 - [ ] Boundary check in CI: `domain` must not import AWS or browser code
 - [ ] One small tested function in `domain`, so the pipeline has something real to run
-- [ ] GitLab CI with OIDC into both accounts (details below)
+- [ ] GitHub Actions with OIDC into both accounts (details below)
 
 ## Week 2: hello world and ADRs
 
@@ -40,13 +40,13 @@ All of these must pass before Phase 1 starts:
 
 ## Pipeline shape
 
-- Every MR: lint, test, boundary check, `cdk synth`, and `cdk diff` posted to the MR.
+- Every pull request: lint, test, boundary check, `cdk synth`, and `cdk diff` posted to the PR.
 - Merge to main: deploy dev automatically.
-- Prod: deploy the same commit behind a manual job.
+- Prod: deploy the same commit through a GitHub Environment (`prod`) that requires your approval.
 
 ## Gotchas
 
-- **OIDC trust:** scope each role to the project path and ref. Only protected branches may assume the prod role. The CI role needs only `sts:AssumeRole` on the CDK bootstrap roles.
+- **OIDC trust:** the issuer is `token.actions.githubusercontent.com`. Scope each role on the `sub` claim to this repository: `repo:Afonso-Boto/finance-app:ref:refs/heads/main` for dev, and `repo:Afonso-Boto/finance-app:environment:prod` for prod, so only the approved `prod` environment can assume the prod role. The CI role needs only `sts:AssumeRole` on the CDK bootstrap roles.
 - **Chicken-and-egg:** the OIDC provider and CI roles must exist before the pipeline can deploy. Create them once from a laptop with an admin profile as a small `bootstrap` stack, and document the exception in ADR-0004.
 - **Cognito callback URL:** the app client needs the CloudFront domain, which exists only after the distribution. This affects where the stateful/stateless split sits.
 - **Costs:** no NAT Gateway or VPC, log retention set everywhere, X-Ray sampling kept low. Enforce with a CDK aspect or lint rule, not memory.
