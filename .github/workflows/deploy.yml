@@ -1,0 +1,63 @@
+name: Deploy
+
+# Every push to main: checks, then dev, then prod after approval in the `prod` environment.
+# All jobs run in one workflow run, so prod deploys exactly the commit dev received.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Never cancel a deploy halfway. A newer push waits for the running one.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/check.yml
+
+  deploy-dev:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      # The dev deploy role trusts only pushes to main (Bootstrap stack).
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::117442930591:role/finance-app-github-deploy
+          role-session-name: deploy-dev-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      # Bootstrap stacks are not in the app without -c bootstrap=true, so this can't touch them.
+      - run: pnpm --filter @finance/infra exec cdk deploy "*-dev" --require-approval never
+        env:
+          BUDGET_ALERT_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL }}
+
+  deploy-prod:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    # Waits for approval; the prod deploy role trusts only this environment.
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::756429941457:role/finance-app-github-deploy
+          role-session-name: deploy-prod-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - run: pnpm --filter @finance/infra exec cdk deploy "*-prod" --require-approval never
+        env:
+          BUDGET_ALERT_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL }}

@@ -31,14 +31,29 @@ Run from the repo root:
 | `pnpm --filter @finance/domain test` | Run one package's script |
 | `pnpm --filter @finance/infra synth` | `cdk synth` |
 
-## Deploying infrastructure (from a laptop, until the deploy pipeline exists)
+## Deploying infrastructure
 
-Sign in once with `aws sso login --profile finance-dev`, then from the repo root:
+The pipeline deploys everything except the bootstrap stacks:
+
+| Event | What runs |
+| --- | --- |
+| Pull request | Checks, then `cdk diff` against dev and prod (read-only diff role) |
+| Push to `main` | Checks, deploy dev, then deploy prod after approval in the `prod` environment |
+
+Bootstrap stacks (GitHub OIDC provider and roles) are deployed from a laptop only, because the
+pipeline runs as the roles they define. They only exist in the CDK app with `-c bootstrap=true`:
 
 ```
-BUDGET_ALERT_EMAIL=you@example.com pnpm --filter @finance/infra exec cdk diff Budgets-dev --profile finance-dev
-BUDGET_ALERT_EMAIL=you@example.com pnpm --filter @finance/infra exec cdk deploy Budgets-dev --profile finance-dev
+aws sso login --profile finance-dev
+pnpm --filter @finance/infra exec cdk deploy Bootstrap-dev -c bootstrap=true --profile finance-dev
+pnpm --filter @finance/infra exec cdk deploy Bootstrap-prod -c bootstrap=true --profile finance-prod
 ```
 
-Account IDs, Regions and budget limits live in `infra/lib/config.ts`. The alert email is passed in
-through `BUDGET_ALERT_EMAIL` so it is not committed.
+`BUDGET_ALERT_EMAIL` must be set for every `cdk` command (e.g. exported in `~/.zshrc`).
+Account IDs, Regions and budget limits live in `infra/lib/config.ts`; the workflows repeat the
+account IDs, and `infra/lib/workflows.test.ts` fails if they drift apart.
+
+GitHub setup (once):
+
+- Repository secret `BUDGET_ALERT_EMAIL`.
+- Environment `prod`: required reviewer (you), deployment branches limited to `main`.

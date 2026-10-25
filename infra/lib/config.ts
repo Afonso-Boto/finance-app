@@ -22,7 +22,12 @@ export interface EnvironmentConfig {
 }
 
 /** The GitHub repository whose workflows may deploy (ADR-0004). */
-export const github = { owner: 'Afonso-Boto', repo: 'finance-app' } as const;
+export const github = {
+  owner: 'Afonso-Boto',
+  ownerId: '57546747',
+  repo: 'finance-app',
+  repoId: '1433468503',
+} as const;
 
 /** Workload Region for every environment (ADR-0004). */
 const REGION = 'eu-north-1';
