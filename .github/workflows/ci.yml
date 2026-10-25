@@ -33,5 +33,7 @@ jobs:
 
       - run: pnpm typecheck
       - run: pnpm test
-      # Enable once infra/bin/app.ts defines its first stack (cdk synth fails on an empty app).
-      # - run: pnpm --filter @finance/infra synth
+      # Synth only: the placeholder email never reaches AWS. Deploy workflows use the real address.
+      - run: pnpm --filter @finance/infra synth
+        env:
+          BUDGET_ALERT_EMAIL: ci@example.invalid
